@@ -54,19 +54,9 @@
 ### Shadow Rendering
 
 **Low:** Single PCF tap, 128x128 shadow map
-```glsl
-float shadow = texture(shadowMap, uv).r > fragDepth ? 1.0 : 0.0;
-```
 **Performance:** ~0.5ms
 
 **Medium:** 4x4 PCF filter, 256x256 shadow map
-```glsl
-float shadow = 0.0;
-for(int i = -1; i <= 1; i++)
-for(int j = -1; j <= 1; j++)
-    shadow += texture(shadowMap, uv + offset*vec2(i,j)).r > fragDepth ? 1.0 : 0.0;
-shadow /= 9.0;
-```
 **Performance:** ~1.0ms
 
 **High:** 8x8 PCF filter, 512x512 shadow map, cascaded
@@ -74,83 +64,6 @@ shadow /= 9.0;
 
 **Ultra:** 16x16 PCF filter, 1024x1024 shadow map, cascaded with compare
 **Performance:** ~4.0ms
-
-### Lighting Calculation
-
-**Optimized for Night Performance:**
-
-```glsl
-// Fast moonlight calculation
-vec3 moonlight = vec3(0.1, 0.2, 0.4) * moonBrightness * max(0.0, dot(normal, moonDir));
-
-// Efficient ambient
-vec3 ambient = mix(nightAmbient, dayAmbient, timeOfDayFactor);
-
-// Combine
-vec3 lit = albedo * (sunlight + moonlight + ambient);
-```
-
-### Foliage Animation
-
-**Simple vertex-based waving:**
-
-```glsl
-// Vertex shader
-float wave = sin(fragPos.x * 0.1 + fragPos.z * 0.1 + time * 0.3) * 0.1;
-gl_Position += vec4(wave, 0.0, 0.0, 0.0);
-```
-
-**Cost:** ~0.2ms (vertex bound, not fragment bound)
-
-### Volumetric Fog
-
-**Low:** Disabled entirely
-
-**Medium:** Simple distance-based fog
-```glsl
-float fogFactor = 1.0 - exp(-distance * 0.01);
-color = mix(color, fogColor, fogFactor);
-```
-**Performance:** ~0.5ms
-
-**High:** Volumetric fog with shadow sampling
-```glsl
-vec3 rayDir = normalize(fragPos - cameraPos);
-vec3 result = vec3(0.0);
-for(int i = 0; i < 16; i++) { // 16 steps
-    vec3 rayPos = cameraPos + rayDir * float(i) * stepSize;
-    float shadow = texture(shadowMap, project(rayPos)).r;
-    float density = exp(-distance(rayPos, cameraPos) * 0.05);
-    result += density * shadow * fogColor;
-}
-color = mix(color, result, fogFactor);
-```
-**Performance:** ~1.0ms
-
-**Ultra:** Full volumetric with multi-directional sampling
-**Performance:** ~3.0ms
-
-### Screen-Space Reflections
-
-**Disabled in Low/Medium presets**
-
-**High/Ultra:** Binary search raycasting
-```glsl
-vec3 rayStart = fragPos;
-vec3 rayDir = reflect(viewDir, normal);
-
-for(int step = 0; step < 64; step++) {
-    vec3 rayPos = rayStart + rayDir * float(step) * stepSize;
-    vec4 projPos = projection * vec4(rayPos, 1.0);
-    vec2 screenPos = projPos.xy / projPos.w * 0.5 + 0.5;
-    
-    if(texture(depthBuffer, screenPos).r < projPos.z) {
-        // Hit detected, can retrieve color
-        return texture(colorBuffer, screenPos).rgb;
-    }
-}
-```
-**Performance:** ~1.5ms for 64 steps
 
 ## Optimization Tips for Users
 
@@ -189,6 +102,8 @@ for(int step = 0; step < 64; step++) {
 
 ### Conditional Compilation
 
+Use preprocessor directives for different quality levels:
+
 ```glsl
 #ifdef LOW_QUALITY
     // Use simple calculations
@@ -201,8 +116,9 @@ for(int step = 0; step < 64; step++) {
 
 ### Early Exit Patterns
 
+Skip expensive calculations for occluded fragments:
+
 ```glsl
-// Skip expensive calculations for occluded fragments
 if(depth > 0.999) {
     gl_FragColor = vec4(sky, 1.0);
     return;
@@ -232,12 +148,6 @@ Cache expensive calculations like normal vectors for use in multiple passes.
 2. Enable frame time breakdown
 3. Identify bottleneck passes
 4. Adjust relevant settings
-
-### Manual Timing
-1. Disable effects one by one
-2. Measure FPS change
-3. Identify highest-cost effects
-4. Prioritize optimization efforts
 
 ## Memory Usage
 

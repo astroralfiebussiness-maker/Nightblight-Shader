@@ -41,8 +41,10 @@ NightBlight dramatically improves both daytime and nighttime visuals while maint
 - Realistic lightning flashes
 
 ### Visual Effects
-- High-quality bloom
+- High-quality bloom with configurable intensity
 - Screen-space reflections
+- Motion blur (optional)
+- Depth of field (optional)
 - Temporal anti-aliasing
 - Volumetric fog
 - Cinematic color grading
@@ -116,9 +118,12 @@ Nightblight-Shader/
 └── shaders.properties
 ```
 
-## Configuration
+## Documentation
 
-All shader settings can be configured via the in-game options menu. See `docs/CONFIGURATION.md` for detailed descriptions.
+- **ARCHITECTURE.md**: Technical overview of shader structure
+- **SHADER_PASSES.md**: Detailed explanation of each rendering pass
+- **PERFORMANCE.md**: Optimization guide and benchmarks
+- **CONFIGURATION.md**: All configurable options
 
 ## Development
 
