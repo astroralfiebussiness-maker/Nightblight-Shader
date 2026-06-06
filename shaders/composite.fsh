@@ -1,10 +1,12 @@
 #version 150
+#extension GL_ARB_explicit_attrib_location : enable
 
 // NightBlight - Composite Shader (Main Lighting Pass)
-// Deferred lighting calculation
 
-uniform sampler2D colortex0;   // Albedo
-uniform sampler2D depthtex0;   // Depth
+uniform sampler2D colortex0;
+uniform sampler2D colortex1;
+uniform sampler2D colortex2;
+uniform sampler2D depthtex0;
 uniform int performancePreset;
 uniform float worldTime;
 uniform float ambientStrength;
@@ -13,15 +15,22 @@ uniform float sunBrightness;
 uniform float moonBrightness;
 
 in vec2 texCoord;
-out vec4 outColor;
+
+layout(location = 0) out vec4 colortex0_out;
+layout(location = 1) out vec4 colortex1_out;
+layout(location = 2) out vec4 colortex2_out;
 
 const float PI = 3.14159265359;
+const float TWO_PI = 6.28318530718;
 
 float getTimeOfDay() {
     return mod(worldTime / 24000.0, 1.0);
 }
 
 vec3 getSkyColor(float time) {
+    float sunAngle = (time - 0.25) * TWO_PI;
+    float sunHeight = cos(sunAngle);
+    
     if (time < 0.25) {
         return mix(vec3(0.01, 0.01, 0.02), vec3(1.0, 0.6, 0.3), time / 0.25);
     } else if (time < 0.5) {
@@ -37,31 +46,35 @@ void main() {
     vec3 albedo = texture(colortex0, texCoord).rgb;
     float depth = texture(depthtex0, texCoord).r;
     
-    if (depth >= 1.0) {
-        // Sky
+    // Sky
+    if (depth >= 0.999) {
         float time = getTimeOfDay();
-        outColor = vec4(getSkyColor(time), 1.0);
+        colortex0_out = vec4(getSkyColor(time), 1.0);
+        colortex1_out = vec4(0.5, 0.5, 1.0, 1.0);
+        colortex2_out = vec4(0.0, 0.0, 0.0, 1.0);
         return;
     }
     
-    // Get time info
     float time = getTimeOfDay();
-    vec3 skyColor = getSkyColor(time);
-    
-    // Sun and moon direction
-    float sunAngle = (time - 0.25) * 2.0 * PI;
+    float sunAngle = (time - 0.25) * TWO_PI;
     vec3 sunDir = normalize(vec3(sin(sunAngle), cos(sunAngle), 0.0));
     vec3 moonDir = -sunDir;
     
-    // Basic lighting
-    float sunlight = max(0.0, sunDir.y) * sunBrightness * (1.0 - step(0.5, time));
-    float moonlight = max(0.0, moonDir.y) * moonBrightness * step(0.5, time);
+    // Lighting
+    float sunlight = max(0.0, sunDir.y) * sunBrightness;
+    float moonlight = max(0.0, moonDir.y) * moonBrightness;
     
-    // Ambient
+    if (time > 0.5) {
+        sunlight = 0.0;
+    } else {
+        moonlight = 0.0;
+    }
+    
     float ambient = mix(ambientStrength, nightAmbientStrength, step(0.5, time));
     
-    // Combine
-    vec3 litColor = albedo * (sunlight + moonlight + ambient);
+    vec3 lit = albedo * (sunlight + moonlight + ambient);
     
-    outColor = vec4(litColor, 1.0);
+    colortex0_out = vec4(lit, 1.0);
+    colortex1_out = texture(colortex1, texCoord);
+    colortex2_out = texture(colortex2, texCoord);
 }

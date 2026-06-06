@@ -1,10 +1,10 @@
 #version 150
+#extension GL_ARB_explicit_attrib_location : enable
 
 // NightBlight - Water Fragment Shader
 // Water rendering with reflections and refraction
 
 uniform sampler2D tex;
-uniform sampler2D depthtex0;
 uniform int performancePreset;
 uniform float worldTime;
 
@@ -13,8 +13,16 @@ in vec3 normal;
 in vec4 color;
 in vec3 fragPos;
 in float waveHeight;
+in vec3 viewNormal;
 
-out vec4 outColor;
+layout(location = 0) out vec4 colortex0;
+layout(location = 1) out vec4 colortex1;
+layout(location = 2) out vec4 colortex2;
+
+vec2 encodeNormal(vec3 n) {
+    n = normalize(n) * 0.5 + 0.5;
+    return n.xy;
+}
 
 void main() {
     vec4 texColor = texture(tex, texCoord);
@@ -23,24 +31,13 @@ void main() {
     // Apply blue tint to water
     waterColor = mix(waterColor, vec3(0.0, 0.4, 0.8), 0.6);
     
-    // Caustics pattern for underwater effect
+    // Caustics
     float caustic = sin(texCoord.x * 10.0 + worldTime * 0.001) * 
                    sin(texCoord.y * 10.0 + worldTime * 0.0015) * 0.3 + 0.7;
-    
     waterColor *= caustic;
     
-    // Fresnel effect for water
-    vec3 viewDir = normalize(vec3(0.0, 1.0, 0.0));
-    float fresnel = pow(1.0 - abs(dot(viewDir, normal)), 2.0);
-    
-    // Glow from water at night
-    float time = mod(worldTime / 24000.0, 1.0);
-    float nightGlow = 0.0;
-    if (time > 0.5) {
-        nightGlow = (time - 0.5) * 0.3;
-    }
-    
-    waterColor += vec3(0.1, 0.2, 0.4) * nightGlow;
-    
-    outColor = vec4(waterColor, 0.8);
+    // GBuffer output
+    colortex0 = vec4(waterColor, 1.0);
+    colortex1 = vec4(encodeNormal(normal), 0.5, 0.5); // Lower specularity
+    colortex2 = vec4(vec3(0.0), 0.8);
 }

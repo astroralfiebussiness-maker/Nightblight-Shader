@@ -1,4 +1,5 @@
 #version 150
+#extension GL_ARB_explicit_attrib_location : enable
 
 // NightBlight - Basic Fragment Shader
 
@@ -8,8 +9,16 @@ uniform float ambientStrength;
 in vec2 texCoord;
 in vec3 normal;
 in vec4 color;
+in vec3 viewNormal;
 
-out vec4 outColor;
+layout(location = 0) out vec4 colortex0;
+layout(location = 1) out vec4 colortex1;
+layout(location = 2) out vec4 colortex2;
+
+vec2 encodeNormal(vec3 n) {
+    n = normalize(n) * 0.5 + 0.5;
+    return n.xy;
+}
 
 void main() {
     vec4 texColor = texture(tex, texCoord);
@@ -17,7 +26,8 @@ void main() {
     if (texColor.a < 0.5) discard;
     
     vec3 albedo = texColor.rgb * color.rgb;
-    vec3 lighting = normalize(normal) * 0.5 + 0.5; // Basic normal visualization
     
-    outColor = vec4(albedo * (lighting + ambientStrength), 1.0);
+    colortex0 = vec4(albedo, 1.0);
+    colortex1 = vec4(encodeNormal(normal), 0.5, 1.0);
+    colortex2 = vec4(vec3(0.0), 1.0);
 }

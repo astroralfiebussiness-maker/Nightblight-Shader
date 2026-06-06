@@ -1,45 +1,26 @@
 #version 150
+#extension GL_ARB_explicit_attrib_location : enable
 
 // NightBlight - Terrain Fragment Shader
 // Main terrain rendering with lighting
 
 uniform sampler2D tex;
-uniform int performancePreset;
-uniform float ambientStrength;
-uniform float nightAmbientStrength;
-uniform float sunBrightness;
-uniform float moonBrightness;
-uniform float worldTime;
+uniform sampler2D lightmap;
 
 in vec2 texCoord;
 in vec3 normal;
 in vec4 color;
 in vec3 fragPos;
-flat in int blockID;
+in vec3 viewNormal;
 
-out vec4 outColor;
+layout(location = 0) out vec4 colortex0;
+layout(location = 1) out vec4 colortex1;
+layout(location = 2) out vec4 colortex2;
 
-// Simple day/night calculation
-float getTimeOfDay() {
-    return mod(worldTime / 24000.0, 1.0);
-}
-
-vec3 getSkyColor(float time) {
-    if (time < 0.25) {
-        return mix(vec3(0.01, 0.01, 0.02), vec3(1.0, 0.6, 0.3), time / 0.25);
-    } else if (time < 0.5) {
-        return mix(vec3(1.0, 0.6, 0.3), vec3(0.4, 0.65, 1.0), (time - 0.25) / 0.25);
-    } else if (time < 0.75) {
-        return mix(vec3(0.4, 0.65, 1.0), vec3(1.0, 0.6, 0.3), (time - 0.5) / 0.25);
-    } else {
-        return mix(vec3(1.0, 0.6, 0.3), vec3(0.01, 0.01, 0.02), (time - 0.75) / 0.25);
-    }
-}
-
-float getSunlight(vec3 sunDir) {
-    float sunAngle = acos(sunDir.y) / 3.14159;
-    if (sunAngle > 0.5) return 0.0; // Sun below horizon
-    return smoothstep(0.5, 0.4, sunAngle);
+// Encode normal
+vec2 encodeNormal(vec3 n) {
+    n = normalize(n) * 0.5 + 0.5;
+    return n.xy;
 }
 
 void main() {
@@ -49,28 +30,14 @@ void main() {
     if (texColor.a < 0.5) discard;
     
     vec3 albedo = texColor.rgb * color.rgb;
-    vec3 normalDir = normalize(normal);
     
-    // Time calculations
-    float time = getTimeOfDay();
-    vec3 skyColor = getSkyColor(time);
+    // GBuffer output
+    // colortex0: Albedo + block light
+    colortex0 = vec4(albedo, 1.0);
     
-    // Sun direction (simple approximation)
-    float sunAngle = (time - 0.25) * 6.28318;
-    vec3 sunDir = normalize(vec3(sin(sunAngle), cos(sunAngle), 0.0));
-    vec3 moonDir = -sunDir;
+    // colortex1: Normal data + specularity
+    colortex1 = vec4(encodeNormal(normal), 0.5, 1.0);
     
-    // Basic lighting
-    float sunlight = max(0.0, dot(normalDir, sunDir)) * getSunlight(sunDir) * sunBrightness;
-    float moonlight = max(0.0, dot(normalDir, moonDir)) * 0.3 * moonBrightness;
-    
-    // Ambient light
-    float ambient = mix(ambientStrength, nightAmbientStrength, step(0.5, time));
-    
-    // Combine lighting
-    vec3 litColor = albedo * (sunlight + moonlight + ambient);
-    
-    // Output to GBuffer
-    // Color
-    outColor = vec4(litColor, 1.0);
+    // colortex2: Emissive flag
+    colortex2 = vec4(vec3(0.0), 1.0);
 }
