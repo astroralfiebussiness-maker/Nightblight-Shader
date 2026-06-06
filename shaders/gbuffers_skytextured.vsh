@@ -1,25 +1,13 @@
-#version 150
+#version 120
+#extension GL_ARB_texture_rectangle : enable
 
-out VS_OUT {
-    vec3 rayDir;
-    vec2 texCoord;
-} vs_out;
+// NightBlight - Fabric Sky Vertex Shader
 
-uniform mat4 gbufferModelMatrix;
-uniform mat4 gbufferViewMatrix;
-uniform mat4 gbufferProjectionMatrix;
-
-in vec3 vaPosition;
-in vec2 vaUV0;
-in vec3 vaNormal;
+varying vec3 rayDir;
+varying vec2 texCoord;
 
 void main() {
-    vs_out.texCoord = vaUV0;
-    
-    vec3 worldPos = (gbufferModelMatrix * vec4(vaPosition, 1.0)).xyz;
-    vec4 viewPos = gbufferViewMatrix * vec4(worldPos, 1.0);
-    gl_Position = gbufferProjectionMatrix * viewPos;
-    
-    // Ray direction for sky
-    vs_out.rayDir = normalize(worldPos);
+    texCoord = gl_MultiTexCoord0.st;
+    rayDir = normalize((gl_ModelViewMatrix * gl_Vertex).xyz);
+    gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;
 }

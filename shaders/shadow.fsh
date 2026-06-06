@@ -1,10 +1,12 @@
-#version 150
+#version 120
+
+// NightBlight - Fabric Shadow Fragment Shader
+
+varying vec2 texCoord;
 
 uniform sampler2D tex;
 
-in vec2 texCoord;
-
 void main() {
-    vec4 color = texture(tex, texCoord);
+    vec4 color = texture2D(tex, texCoord);
     if (color.a < 0.1) discard;
 }

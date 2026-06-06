@@ -1,13 +1,13 @@
-#version 150
+#version 120
+#extension GL_ARB_texture_rectangle : enable
 
-in VS_OUT {
-    vec3 rayDir;
-    vec2 texCoord;
-} fs_in;
+// NightBlight - Fabric Sky Fragment Shader
+
+varying vec3 rayDir;
+varying vec2 texCoord;
 
 uniform float worldTime;
-
-out vec4 outColor;
+uniform float starIntensity;
 
 const float PI = 3.14159265359;
 
@@ -19,32 +19,26 @@ void main() {
     float time = mod(worldTime / 24000.0, 1.0);
     vec3 color;
     
-    // Determine if day or night
     bool isDay = time < 0.5;
     
-    if (fs_in.rayDir.y > 0.0) {
-        // Above horizon
+    if (rayDir.y > 0.0) {
         if (isDay) {
-            // Daytime sky - blue
             vec3 skyBlue = vec3(0.5, 0.7, 1.0);
             vec3 horizon = vec3(1.0, 0.7, 0.5);
-            float upness = clamp(fs_in.rayDir.y, 0.0, 1.0);
+            float upness = clamp(rayDir.y, 0.0, 1.0);
             color = mix(horizon, skyBlue, upness);
         } else {
-            // Nighttime sky - dark with stars
             color = vec3(0.01, 0.01, 0.03);
             
-            // Add stars
-            float star = hash(fs_in.rayDir * 1000.0);
+            float star = hash(rayDir * 1000.0);
             if (star > 0.98) {
                 float brightness = (star - 0.98) * 50.0;
-                color += vec3(brightness);
+                color += vec3(brightness) * starIntensity;
             }
         }
     } else {
-        // Below horizon - black
         color = vec3(0.0);
     }
     
-    outColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, 1.0);
 }

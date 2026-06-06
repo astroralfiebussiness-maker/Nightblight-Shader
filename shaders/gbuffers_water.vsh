@@ -1,33 +1,26 @@
-#version 150
+#version 120
+#extension GL_ARB_texture_rectangle : enable
 
-out VS_OUT {
-    vec2 texCoord;
-    vec3 normal;
-    vec4 vertexColor;
-} vs_out;
+// NightBlight - Fabric Water Vertex Shader
 
-uniform mat4 gbufferModelMatrix;
-uniform mat4 gbufferViewMatrix;
-uniform mat4 gbufferProjectionMatrix;
+varying vec2 texCoord;
+varying vec3 normal;
+varying vec4 vertexColor;
+varying float waterWave;
+
 uniform float worldTime;
 
-in vec3 vaPosition;
-in vec2 vaUV0;
-in vec3 vaNormal;
-in vec4 vaColor;
-
 void main() {
-    vs_out.texCoord = vaUV0;
-    vs_out.vertexColor = vaColor;
-    vs_out.normal = normalize(mat3(gbufferModelMatrix) * vaNormal);
+    texCoord = gl_MultiTexCoord0.st;
+    vertexColor = gl_Color;
+    normal = normalize(gl_NormalMatrix * gl_Normal);
     
-    vec3 worldPos = (gbufferModelMatrix * vec4(vaPosition, 1.0)).xyz;
+    vec3 worldPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
     
     // Water wave animation
     float wave = sin(worldPos.x * 0.1 + worldTime * 0.001) * 0.02;
     wave += sin(worldPos.z * 0.1 + worldTime * 0.0015) * 0.02;
-    worldPos.y += wave;
+    waterWave = wave;
     
-    vec4 viewPos = gbufferViewMatrix * vec4(worldPos, 1.0);
-    gl_Position = gbufferProjectionMatrix * viewPos;
+    gl_Position = gl_ProjectionMatrix * (gl_ModelViewMatrix * gl_Vertex + vec4(0.0, wave, 0.0, 0.0));
 }

@@ -1,31 +1,39 @@
-#version 150
+#version 120
+#extension GL_ARB_texture_rectangle : enable
 
-in VS_OUT {
-    vec2 texCoord;
-    vec3 normal;
-    vec4 vertexColor;
-} fs_in;
+// NightBlight - Fabric Terrain Fragment Shader
+
+varying vec2 texCoord;
+varying vec3 normal;
+varying vec4 vertexColor;
+varying vec3 fragPos;
+varying float material;
 
 uniform sampler2D tex;
 uniform sampler2D lightmap;
-
-out vec4 outColor;
+uniform float sunBrightness;
+uniform float moonBrightness;
+uniform float ambientLight;
 
 void main() {
-    vec4 texColor = texture(tex, fs_in.texCoord);
+    vec4 texColor = texture2D(tex, texCoord);
     
     if (texColor.a < 0.1) discard;
     
-    vec3 baseColor = texColor.rgb * fs_in.vertexColor.rgb;
+    vec3 baseColor = texColor.rgb * vertexColor.rgb;
+    vec3 norm = normalize(normal);
     
-    // Normalize the normal
-    vec3 normal = normalize(fs_in.normal);
-    
-    // Very simple lighting - sun from above
+    // Simple sun direction
     vec3 sunDir = normalize(vec3(0.5, 1.0, 0.5));
-    float diffuse = max(0.2, dot(normal, sunDir));
+    float diffuse = max(0.0, dot(norm, sunDir)) * sunBrightness;
     
-    vec3 finalColor = baseColor * diffuse;
+    // Moon direction (opposite)
+    vec3 moonDir = -sunDir;
+    float moonLight = max(0.0, dot(norm, moonDir)) * moonBrightness * 0.3;
     
-    outColor = vec4(finalColor, 1.0);
+    // Combine lighting
+    float lighting = diffuse + moonLight + ambientLight;
+    vec3 finalColor = baseColor * lighting;
+    
+    gl_FragColor = vec4(finalColor, 1.0);
 }

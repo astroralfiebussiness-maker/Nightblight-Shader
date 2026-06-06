@@ -1,16 +1,14 @@
-#version 150
+#version 120
+#extension GL_ARB_texture_rectangle : enable
 
-uniform sampler2D colortex0;
+// NightBlight - Fabric Composite Shader
 
-in vec2 texCoord;
+varying vec2 texCoord;
 
-out vec4 outColor;
+uniform sampler2DRect colortex0;
 
 void main() {
-    vec3 color = texture(colortex0, texCoord).rgb;
-    
-    // Clamp to prevent white screen
+    vec3 color = texture2DRect(colortex0, gl_FragCoord.xy).rgb;
     color = clamp(color, vec3(0.0), vec3(1.0));
-    
-    outColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, 1.0);
 }
