@@ -1,8 +1,10 @@
 #version 150
 
-out vec2 texCoord;
-out vec3 normal;
-out vec4 vertexColor;
+out VS_OUT {
+    vec2 texCoord;
+    vec3 normal;
+    vec4 vertexColor;
+} vs_out;
 
 uniform mat4 gbufferModelMatrix;
 uniform mat4 gbufferViewMatrix;
@@ -15,9 +17,9 @@ in vec3 vaNormal;
 in vec4 vaColor;
 
 void main() {
-    texCoord = vaUV0;
-    vertexColor = vaColor;
-    normal = normalize(mat3(gbufferModelMatrix) * vaNormal);
+    vs_out.texCoord = vaUV0;
+    vs_out.vertexColor = vaColor;
+    vs_out.normal = normalize(mat3(gbufferModelMatrix) * vaNormal);
     
     vec3 worldPos = (gbufferModelMatrix * vec4(vaPosition, 1.0)).xyz;
     
@@ -26,5 +28,6 @@ void main() {
     wave += sin(worldPos.z * 0.1 + worldTime * 0.0015) * 0.02;
     worldPos.y += wave;
     
-    gl_Position = gbufferProjectionMatrix * (gbufferViewMatrix * vec4(worldPos, 1.0));
+    vec4 viewPos = gbufferViewMatrix * vec4(worldPos, 1.0);
+    gl_Position = gbufferProjectionMatrix * viewPos;
 }

@@ -1,22 +1,24 @@
 #version 150
 
-uniform sampler2D tex;
-uniform float worldTime;
+in VS_OUT {
+    vec2 texCoord;
+    vec3 normal;
+    vec4 vertexColor;
+} fs_in;
 
-in vec2 texCoord;
-in vec3 normal;
-in vec4 vertexColor;
+uniform float worldTime;
 
 out vec4 outColor;
 
 void main() {
-    vec3 color = vec3(0.1, 0.4, 0.8); // Water blue
+    vec3 waterColor = vec3(0.1, 0.4, 0.8);
     
     // Caustic effect
-    float caustic = sin(texCoord.x * 10.0 + worldTime * 0.001) * 
-                   sin(texCoord.y * 10.0 + worldTime * 0.0015) * 0.15 + 0.85;
+    float caustic = sin(fs_in.texCoord.x * 10.0 + worldTime * 0.001) * 
+                   sin(fs_in.texCoord.y * 10.0 + worldTime * 0.0015) * 0.15 + 0.85;
     
-    color *= caustic;
+    waterColor *= caustic;
+    waterColor *= 0.7; // Make it darker
     
-    outColor = vec4(color, 0.7);
+    outColor = vec4(waterColor, 0.8);
 }

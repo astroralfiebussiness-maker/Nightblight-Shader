@@ -1,23 +1,31 @@
 #version 150
 
-uniform sampler2D tex;
+in VS_OUT {
+    vec2 texCoord;
+    vec3 normal;
+    vec4 vertexColor;
+} fs_in;
 
-in vec2 texCoord;
-in vec3 normal;
-in vec4 vertexColor;
+uniform sampler2D tex;
+uniform sampler2D lightmap;
 
 out vec4 outColor;
 
 void main() {
-    vec4 texColor = texture(tex, texCoord);
+    vec4 texColor = texture(tex, fs_in.texCoord);
     
     if (texColor.a < 0.1) discard;
     
-    vec3 color = texColor.rgb * vertexColor.rgb;
+    vec3 baseColor = texColor.rgb * fs_in.vertexColor.rgb;
     
-    // Simple lighting
-    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-    float light = max(0.3, dot(normalize(normal), lightDir));
+    // Normalize the normal
+    vec3 normal = normalize(fs_in.normal);
     
-    outColor = vec4(color * light, 1.0);
+    // Very simple lighting - sun from above
+    vec3 sunDir = normalize(vec3(0.5, 1.0, 0.5));
+    float diffuse = max(0.2, dot(normal, sunDir));
+    
+    vec3 finalColor = baseColor * diffuse;
+    
+    outColor = vec4(finalColor, 1.0);
 }

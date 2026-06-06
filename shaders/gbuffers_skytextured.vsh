@@ -1,7 +1,9 @@
 #version 150
 
-out vec3 rayDir;
-out vec2 texCoord;
+out VS_OUT {
+    vec3 rayDir;
+    vec2 texCoord;
+} vs_out;
 
 uniform mat4 gbufferModelMatrix;
 uniform mat4 gbufferViewMatrix;
@@ -12,10 +14,12 @@ in vec2 vaUV0;
 in vec3 vaNormal;
 
 void main() {
-    texCoord = vaUV0;
+    vs_out.texCoord = vaUV0;
     
     vec3 worldPos = (gbufferModelMatrix * vec4(vaPosition, 1.0)).xyz;
-    gl_Position = gbufferProjectionMatrix * (gbufferViewMatrix * vec4(worldPos, 1.0));
+    vec4 viewPos = gbufferViewMatrix * vec4(worldPos, 1.0);
+    gl_Position = gbufferProjectionMatrix * viewPos;
     
-    rayDir = normalize(worldPos);
+    // Ray direction for sky
+    vs_out.rayDir = normalize(worldPos);
 }
