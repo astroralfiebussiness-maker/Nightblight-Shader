@@ -1,33 +1,21 @@
 #version 150
-#extension GL_ARB_explicit_attrib_location : enable
-
-// NightBlight - Entities Fragment Shader
 
 uniform sampler2D tex;
 
 in vec2 texCoord;
 in vec3 normal;
-in vec4 color;
-in vec3 fragPos;
-in vec3 viewNormal;
+in vec4 vertexColor;
 
-layout(location = 0) out vec4 colortex0;
-layout(location = 1) out vec4 colortex1;
-layout(location = 2) out vec4 colortex2;
-
-vec2 encodeNormal(vec3 n) {
-    n = normalize(n) * 0.5 + 0.5;
-    return n.xy;
-}
+out vec4 outColor;
 
 void main() {
     vec4 texColor = texture(tex, texCoord);
     
-    if (texColor.a < 0.5) discard;
+    if (texColor.a < 0.1) discard;
     
-    vec3 albedo = texColor.rgb * color.rgb;
+    vec3 color = texColor.rgb * vertexColor.rgb;
+    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+    float light = max(0.3, dot(normalize(normal), lightDir));
     
-    colortex0 = vec4(albedo, 1.0);
-    colortex1 = vec4(encodeNormal(normal), 0.5, 1.0);
-    colortex2 = vec4(vec3(0.0), 1.0);
+    outColor = vec4(color * light, 1.0);
 }
